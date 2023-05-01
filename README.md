@@ -4,7 +4,7 @@ A variant of the Link component in NextJS that will execture a preload function 
 
 ## Demo
 
-https://link-preload.vercel.app/
+https://preload-next-example.vercel.app
 
 ## Example
 
