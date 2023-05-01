@@ -1,6 +1,6 @@
 # Preload Link NextJS
 
-A variant of the Link component in NextJS that will execture a preload function that is attached to the page to allow for preloading data on hover. Providing the illusion of a faster page load as the data is loaded when the user hovers over the link.
+A variant of the Link component in NextJS that will execute a preload function that is attached to the page to allow for preloading data on hover. Providing the illusion of a faster page load as the data is loaded when the user hovers over the link.
 
 ## Demo
 
