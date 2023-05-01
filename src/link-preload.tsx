@@ -193,7 +193,6 @@ function prefetch(
           route
         )) as any;
 
-        console.log("LinkPreload: prefetching", loaded.page);
         if (loaded.page.preload && typeof loaded.page.preload === "function") {
           const context: PreloadContext = {
             session: extra.session,

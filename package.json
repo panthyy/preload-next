@@ -1,6 +1,6 @@
 {
   "name": "preload-next",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Preload Link Component for Next.js to handle seamless page transitions",
   "main": "dist/index.js",
   "scripts": {
