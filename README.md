@@ -6,7 +6,17 @@ A variant of the Link component in NextJS that will execture a preload function 
 
 https://preload-next-example.vercel.app
 
-## Example
+## Installation
+
+```bash
+yarn install preload-next
+```
+or 
+```bash
+npm install preload-next
+```
+
+## Usage
 
 pages/index.tsx
 ```jsx
