@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
-import { LinkPreload } from "../../../../";
+import { LinkPreload } from "preload-next";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const Header = () => {

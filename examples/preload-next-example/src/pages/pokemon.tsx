@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import { NextPageContext } from "next/types";
 import { useQuery } from "react-query";
-import { PreloadContext } from "../../../../dist/link-preload";
+import { PreloadContext } from "preload-next";
 
 type Pokemon = {
   name: string;
