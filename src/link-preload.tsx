@@ -2,43 +2,21 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 
 import { UrlObject } from "url";
-import {
-  NextRouter,
-  PrefetchOptions,
-} from "next/dist/shared/lib/router/router";
 import { resolveHref } from "next/dist/shared/lib/router/utils/resolve-href";
 import { addLocale } from "next/dist/shared/lib/router/utils/add-locale";
 import { isLocalURL } from "next/dist/shared/lib/router/utils/is-local-url";
 import { useRouter } from "next/router";
 import { useIntersection } from "next/dist/client/use-intersection";
 import singletonRouter from "next/router";
-import { parseRelativeUrl } from "next/dist/shared/lib/router/utils/parse-relative-url";
-import { formatWithValidation } from "next/dist/shared/lib/router/utils/format-url";
-import { denormalizePagePath } from "next/dist/shared/lib/page-path/denormalize-page-path";
-import { getClientBuildManifest } from "next/dist/client/route-loader";
-import resolveRewrites from "next/dist/shared/lib/router/utils/resolve-rewrites";
-import { isDynamicRoute } from "next/dist/shared/lib/router/utils";
-import { ParsedUrlQuery } from "querystring";
-import { QueryClient, useQueryClient } from "react-query";
-import { Session } from "next-auth";
-import { useSession } from "next-auth/react";
-import { getRouteRegex } from "next/dist/shared/lib/router/utils/route-regex";
-import { parsePath } from "next/dist/shared/lib/router/utils/parse-path";
-import React, { useMemo } from "react";
-import { DomainLocale } from "next/dist/server/config-shared";
-import { normalizeLocalePath } from "next/dist/shared/lib/i18n/normalize-locale-path";
-import { detectDomainLocale } from "next/dist/shared/lib/i18n/detect-domain-locale";
-import {
-  addBasePath,
-  createPropError,
-  getDomainLocale,
-  removeBasePath,
-  removeLocale,
-  removePathTrailingSlash,
-} from "./utils";
-import Link from "next/link";
+import React, { HTMLAttributes } from "react";
+import { addBasePath, getDomainLocale } from "./utils";
+import { useContext } from "react";
+import { linkClicked } from "./link-clicked";
+import { prefetch } from "./prefetch";
+import { PreloadContext } from "./context";
 
 type Url = string | UrlObject;
+
 type RequiredKeys<T> = {
   [K in keyof T]-?: {} extends Pick<T, K> ? never : K;
 }[keyof T];
@@ -55,210 +33,9 @@ export type LinkPreloadProps = {
   passHref?: boolean;
   prefetch?: boolean;
   locale?: string | false;
-};
-type LinkPropsRequired = RequiredKeys<LinkPreloadProps>;
-type LinkPropsOptional = OptionalKeys<LinkPreloadProps>;
+} & Omit<HTMLAttributes<HTMLAnchorElement>, "href" | "as" | "passHref">;
 
 const prefetched: { [cacheKey: string]: boolean } = {};
-
-export type PreloadContext = {
-  session: Session | null;
-  queryClient: QueryClient;
-  query: ParsedUrlQuery;
-};
-
-export type WithPreload<Page> = Page & {
-  preload: (context: PreloadContext) => Promise<void>;
-};
-
-function resolveDynamicRoute(pathname: string, pages: string[]) {
-  const cleanPathname = removePathTrailingSlash(denormalizePagePath(pathname!));
-
-  if (cleanPathname === "/404" || cleanPathname === "/_error") {
-    return pathname;
-  }
-
-  if (!pages.includes(cleanPathname!)) {
-    // eslint-disable-next-line array-callback-return
-    pages.some((page) => {
-      if (isDynamicRoute(page) && getRouteRegex(page).re.test(cleanPathname!)) {
-        pathname = page;
-        return true;
-      }
-    });
-  }
-  return removePathTrailingSlash(pathname);
-}
-
-type hrefToRouteReturn = {
-  route: string;
-  query: ParsedUrlQuery;
-};
-
-async function hrefToRoute({
-  url,
-  asPath,
-  options,
-}: {
-  url: string;
-  asPath: string;
-  options: PrefetchOptions;
-}): Promise<hrefToRouteReturn> {
-  const router = singletonRouter.router!;
-
-  let parsed = parseRelativeUrl(url);
-
-  let { pathname, query } = parsed;
-
-  if (process.env.__NEXT_I18N_SUPPORT) {
-    if (options.locale === false) {
-      pathname = normalizeLocalePath!(pathname, router.locales).pathname;
-      parsed.pathname = pathname;
-      url = formatWithValidation(parsed);
-
-      let parsedAs = parseRelativeUrl(asPath);
-      const localePathResult = normalizeLocalePath!(
-        parsedAs.pathname,
-        router.locales
-      );
-      parsedAs.pathname = localePathResult.pathname;
-      options.locale = localePathResult.detectedLocale || router.defaultLocale;
-      asPath = formatWithValidation(parsedAs);
-    }
-  }
-
-  const pages = await router.pageLoader.getPageList();
-  let resolvedAs = asPath;
-
-  if (process.env.__NEXT_HAS_REWRITES && asPath.startsWith("/")) {
-    let rewrites: any;
-    ({ __rewrites: rewrites } = await getClientBuildManifest());
-
-    const rewritesResult = resolveRewrites(
-      addBasePath(addLocale(asPath, router.locale)) || "/",
-      pages,
-      rewrites,
-      parsed.query,
-      (p: string) => resolveDynamicRoute(p, pages),
-      router.locales
-    );
-    resolvedAs = removeLocale(
-      removeBasePath(rewritesResult.asPath),
-      router.locale
-    );
-
-    if (rewritesResult.matchedPage && rewritesResult.resolvedHref) {
-      pathname = rewritesResult.resolvedHref;
-      parsed.pathname = pathname;
-      url = formatWithValidation(parsed);
-    }
-  } else {
-    parsed.pathname = resolveDynamicRoute(parsed.pathname, pages);
-
-    if (parsed.pathname !== pathname) {
-      pathname = parsed.pathname;
-      parsed.pathname = pathname;
-      url = formatWithValidation(parsed);
-    }
-  }
-
-  const route = removePathTrailingSlash(pathname);
-
-  return { route, query };
-}
-
-function prefetch(
-  router: NextRouter,
-  href: string,
-  as: string,
-  extra: {
-    queryClient: QueryClient;
-    session: Session | null;
-  },
-  options: PrefetchOptions = {}
-): void {
-  if (typeof window === "undefined" || !router) return;
-  if (!isLocalURL(href)) return;
-
-  router
-    .prefetch(href, as, options)
-    .then(async () => {
-      if (singletonRouter.router) {
-        const { route, query } = await hrefToRoute({
-          url: href,
-          asPath: as,
-          options,
-        });
-        const loaded = (await singletonRouter.router.pageLoader.loadPage(
-          route
-        )) as any;
-
-        if (loaded.page.preload && typeof loaded.page.preload === "function") {
-          const context: PreloadContext = {
-            session: extra.session,
-            queryClient: extra.queryClient,
-            query,
-          };
-          await loaded.page.preload(context);
-        } else {
-          console.error(`LinkPreload: preload() not found for ${href}`);
-        }
-      }
-    })
-    .catch((err) => {
-      if (process.env.NODE_ENV !== "production") {
-        throw err;
-      }
-    });
-
-  const curLocale =
-    options && typeof options.locale !== "undefined"
-      ? options.locale
-      : router && router.locale;
-
-  prefetched[href + "%" + as + (curLocale ? "%" + curLocale : "")] = true;
-}
-
-function isModifiedEvent(event: React.MouseEvent): boolean {
-  const { target } = event.currentTarget as HTMLAnchorElement;
-  return (
-    (target && target !== "_self") ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey ||
-    (event.nativeEvent && event.nativeEvent.which === 2)
-  );
-}
-
-function linkClicked(
-  e: React.MouseEvent,
-  router: NextRouter,
-  href: string,
-  as: string,
-  replace?: boolean,
-  shallow?: boolean,
-  scroll?: boolean,
-  locale?: string | false
-): void {
-  const { nodeName } = e.currentTarget;
-
-  if (nodeName === "A" && (isModifiedEvent(e) || !isLocalURL(href))) {
-    return;
-  }
-
-  e.preventDefault();
-
-  if (scroll == null && as.indexOf("#") >= 0) {
-    scroll = false;
-  }
-
-  router[replace ? "replace" : "push"](href, as, {
-    shallow,
-    locale,
-    scroll,
-  });
-}
 
 export const LinkPreload = (
   props: React.PropsWithChildren<LinkPreloadProps>
@@ -314,8 +91,7 @@ export const LinkPreload = (
     [childRef, setIntersectionRef]
   );
 
-  const queryClient = useQueryClient();
-  const session = useSession().data;
+  const preloadContext = useContext(PreloadContext);
   React.useEffect(() => {
     const shouldPrefetch = isVisible && p && isLocalURL(href);
     const curLocale =
@@ -323,21 +99,16 @@ export const LinkPreload = (
     const isPrefetched =
       prefetched[href + "%" + as + (curLocale ? "%" + curLocale : "")];
     if (shouldPrefetch && !isPrefetched) {
-      prefetch(
-        router,
-        href,
-        as,
-        { queryClient, session },
-        {
-          locale: curLocale,
-        }
-      );
+      prefetch(router, href, as, preloadContext, singletonRouter, prefetched, {
+        locale: curLocale,
+      });
     }
-  }, [as, href, isVisible, locale, p, router, queryClient, session]);
+  }, [as, href, isVisible, locale, p, router]);
 
   const childProps: {
     onMouseEnter?: React.MouseEventHandler;
     onClick: React.MouseEventHandler;
+    className?: string;
     href?: string;
     ref?: any;
   } = {
@@ -357,7 +128,9 @@ export const LinkPreload = (
       child.props.onMouseEnter(e);
     }
     if (isLocalURL(href)) {
-      prefetch(router, href, as, { queryClient, session }, { priority: true });
+      prefetch(router, href, as, preloadContext, singletonRouter, {
+        priority: true,
+      });
     }
   };
 
@@ -374,6 +147,8 @@ export const LinkPreload = (
         router && router.locales,
         router && router.domainLocales
       );
+
+    childProps.className = props.className;
 
     childProps.href =
       localeDomain ||

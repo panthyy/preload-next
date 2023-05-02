@@ -5,17 +5,27 @@ import {
   QueryClientProvider,
   useQuery,
 } from "react-query";
-import { SessionProvider } from "next-auth/react";
+import "../styles/globals.css";
+import { PreloadProvider } from "preload-next";
 
 const queryClient = new QueryClient();
+
+export type PreloadContext = {
+  queryClient: QueryClient;
+};
+
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <Hydrate state={pageProps.dehydratedState}>
+    <QueryClientProvider client={queryClient}>
+      <Hydrate state={pageProps.dehydratedState}>
+        <PreloadProvider
+          resolve={{
+            queryClient,
+          }}
+        >
           <Component {...pageProps} />
-        </Hydrate>
-      </QueryClientProvider>
-    </SessionProvider>
+        </PreloadProvider>
+      </Hydrate>
+    </QueryClientProvider>
   );
 }
