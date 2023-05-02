@@ -20,6 +20,8 @@ npm install preload-next
 
 pages/index.tsx
 ```jsx
+import { LinkPreload } from "preload-next";
+
 export const Header = () => {
   return (
     <div>
@@ -48,7 +50,7 @@ pages/pokemon.tsx
 import dynamic from "next/dynamic";
 import { NextPageContext } from "next/types";
 import { useQuery } from "react-query";
-import { PreloadContext } from "link-preload";
+import { PreloadContext } from "./_app";
 
 type Pokemon = {
   name: string;
