@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
-import { LinkPreload } from "preload-next";
+import { LinkPreload } from "../../../../";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { PrismLight } from "react-syntax-highlighter";
 import { dracula } from "react-syntax-highlighter/dist/cjs/styles/prism";

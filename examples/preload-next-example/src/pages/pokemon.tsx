@@ -8,9 +8,10 @@ type Pokemon = {
   name: string;
 };
 
-const preload = async ({ queryClient }: PreloadContext) => {
-  if (!queryClient.getQueryCache().find("pokemon")) {
-    queryClient.prefetchQuery("pokemon", getPokemons);
+const preload = async (ctx: PreloadContext) => {
+  console.log("ctx", ctx);
+  if (!ctx.queryClient.getQueryCache().find("pokemon")) {
+    ctx.queryClient.prefetchQuery("pokemon", getPokemons);
   }
 };
 

@@ -109,7 +109,7 @@ export const LinkPreload = (
     onMouseEnter?: React.MouseEventHandler;
     onClick: React.MouseEventHandler;
     className?: string;
-    href?: string;
+    href?: Url;
     ref?: any;
   } = {
     ref: setRef,
@@ -121,6 +121,7 @@ export const LinkPreload = (
         linkClicked(e, router, href, as, replace, shallow, scroll, locale);
       }
     },
+    href: props.href,
   };
 
   childProps.onMouseEnter = (e: React.MouseEvent) => {
@@ -134,6 +135,9 @@ export const LinkPreload = (
     }
   };
 
+  console.log(
+    props.passHref || (child.type === "a" && !("href" in child.props))
+  );
   if (props.passHref || (child.type === "a" && !("href" in child.props))) {
     const curLocale =
       typeof locale !== "undefined" ? locale : router && router.locale;
@@ -151,8 +155,7 @@ export const LinkPreload = (
     childProps.className = props.className;
 
     childProps.href =
-      localeDomain ||
-      addBasePath(addLocale(as, curLocale, router && router.defaultLocale));
+      localeDomain || addLocale(as, curLocale, router && router.defaultLocale);
   }
 
   return React.cloneElement(child, childProps);

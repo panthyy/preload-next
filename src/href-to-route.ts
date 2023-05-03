@@ -7,6 +7,7 @@ import { parseRelativeUrl } from "next/dist/shared/lib/router/utils/parse-relati
 import resolveRewrites from "next/dist/shared/lib/router/utils/resolve-rewrites";
 import { SingletonRouter } from "next/router";
 import { resolveDynamicRoute } from "./resolve-dynamic-route";
+
 import {
   addBasePath,
   removeBasePath,
@@ -14,6 +15,11 @@ import {
   removePathTrailingSlash,
 } from "./utils";
 import { ParsedUrlQuery } from "querystring";
+import { isDynamicRoute } from "next/dist/shared/lib/router/utils";
+import {
+  getNamedRouteRegex,
+  getRouteRegex,
+} from "next/dist/shared/lib/router/utils/route-regex";
 
 type hrefToRouteReturn = {
   route: string;
@@ -89,6 +95,13 @@ export const hrefToRoute = async ({
   }
 
   const route = removePathTrailingSlash(pathname);
-
-  return { route, query };
+  const reg = getNamedRouteRegex(route, false);
+  const re = RegExp(reg.namedRegex);
+  return {
+    route,
+    query: {
+      ...query,
+      ...re.exec(asPath)?.groups,
+    },
+  };
 };
