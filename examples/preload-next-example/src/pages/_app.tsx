@@ -6,7 +6,7 @@ import {
   useQuery,
 } from "react-query";
 import "../styles/globals.css";
-import { PreloadProvider } from "../../../../";
+import { PreloadProvider } from "preload-next";
 
 const queryClient = new QueryClient();
 

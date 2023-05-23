@@ -93,16 +93,26 @@ export const LinkPreload = (
 
   const preloadContext = useContext(PreloadContext);
   React.useEffect(() => {
-    const shouldPrefetch = isVisible && p && isLocalURL(href);
-    const curLocale =
-      typeof locale !== "undefined" ? locale : router && router.locale;
-    const isPrefetched =
-      prefetched[href + "%" + as + (curLocale ? "%" + curLocale : "")];
-    if (shouldPrefetch && !isPrefetched) {
-      prefetch(router, href, as, preloadContext, singletonRouter, prefetched, {
-        locale: curLocale,
-      });
-    }
+    (async () => {
+      const shouldPrefetch = isVisible && p && isLocalURL(href);
+      const curLocale =
+        typeof locale !== "undefined" ? locale : router && router.locale;
+      const isPrefetched =
+        prefetched[href + "%" + as + (curLocale ? "%" + curLocale : "")];
+      if (shouldPrefetch && !isPrefetched) {
+        await prefetch(
+          router,
+          href,
+          as,
+          preloadContext,
+          singletonRouter,
+          prefetched,
+          {
+            locale: curLocale,
+          }
+        );
+      }
+    })();
   }, [as, href, isVisible, locale, p, router]);
 
   const childProps: {
@@ -124,20 +134,17 @@ export const LinkPreload = (
     href: props.href,
   };
 
-  childProps.onMouseEnter = (e: React.MouseEvent) => {
+  childProps.onMouseEnter = async (e: React.MouseEvent) => {
     if (child.props && typeof child.props.onMouseEnter === "function") {
       child.props.onMouseEnter(e);
     }
     if (isLocalURL(href)) {
-      prefetch(router, href, as, preloadContext, singletonRouter, {
+      await prefetch(router, href, as, preloadContext, singletonRouter, {
         priority: true,
       });
     }
   };
 
-  console.log(
-    props.passHref || (child.type === "a" && !("href" in child.props))
-  );
   if (props.passHref || (child.type === "a" && !("href" in child.props))) {
     const curLocale =
       typeof locale !== "undefined" ? locale : router && router.locale;
