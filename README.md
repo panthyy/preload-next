@@ -1,4 +1,5 @@
 # Preload Link NextJS
+## Or rather prefetching, the terms confuse me.
 
 A variant of the Link component in NextJS that will execute a preload function that is attached to the page to allow for preloading data on hover. Providing the illusion of a faster page load as the data is loaded when the user hovers over the link.
 
